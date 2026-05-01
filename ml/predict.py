@@ -1,9 +1,13 @@
 import joblib
-import numpy as np
 
-model = joblib.load("ml/model.pkl")
+model = None
+
+def load_model():
+    global model
+    if model is None:
+        model = joblib.load("ml/model.pkl")
+    return model
 
 def predict_usage(data):
-    X = np.array(data).reshape(-1, 1)
-    preds = model.predict(X)
-    return float(preds[-1])
+    model = load_model()
+    return model.predict(data)
