@@ -1,9 +1,9 @@
-from flask import Blueprint, jsonify
+from flask import jsonify
 from app.services.prediction_service import predict_future
 
-predictions_bp = Blueprint('predictions', __name__)
-
-@predictions_bp.route('/predict')
 def predict():
-    result = predict_future()
-    return jsonify(result)
+    try:
+        result = predict_future()
+        return jsonify(result), 200
+    except Exception:
+        return jsonify({"error": "Prediction failed"}), 500
