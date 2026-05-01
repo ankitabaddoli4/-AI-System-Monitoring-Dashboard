@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Monitoring Dashboard</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #0f172a;
+    color: white;
+    font-family: Arial;
+    text-align: center;
+}
+
+h1 {
+    margin: 20px;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.card {
+    background: #1e293b;
+    margin: 15px;
+    padding: 20px;
+    width: 200px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.card:hover {
+    transform: scale(1.05);
+    transition: 0.3s;
+}
+
+.value {
+    font-size: 26px;
+    margin-top: 10px;
+}
+
+#alert {
+    margin-top: 20px;
+    font-size: 20px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🚀 AI Monitoring Dashboard</h1>
+
+<div class="container">
+
+    <div class="card">
+        <h3>CPU</h3>
+        <div id="cpu" class="value">--</div>
+    </div>
+
+    <div class="card">
+        <h3>Memory</h3>
+        <div id="memory" class="value">--</div>
+    </div>
+
+    <div class="card">
+        <h3>Disk</h3>
+        <div id="disk" class="value">--</div>
+    </div>
+
+    <div class="card">
+        <h3>Prediction</h3>
+        <div id="prediction" class="value">--</div>
+    </div>
+
+</div>
+
+<!-- 📊 Graph -->
+<canvas id="cpuChart" width="600" height="250"></canvas>
+
+<!-- 🔔 Alert -->
+<div id="alert">Checking...</div>
+
+<script>
+let cpuData = [];
+let labels = [];
+
+const ctx = document.getElementById('cpuChart').getContext('2d');
+
+const cpuChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'CPU Usage %',
+            data: cpuData,
+            borderWidth: 2,
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+function loadData() {
+
+    // Metrics
+    fetch('/metrics')
+    .then(res => res.json())
+    .then(data => {
+
+        let cpu = data.cpu;
+
+        document.getElementById("cpu").innerHTML = cpu + "%";
+
+        if (cpu > 80) {
+            document.getElementById("cpu").style.color = "red";
+        } else if (cpu > 50) {
+            document.getElementById("cpu").style.color = "orange";
+        } else {
+            document.getElementById("cpu").style.color = "lightgreen";
+        }
+
+        document.getElementById("memory").innerHTML = data.memory + "%";
+        document.getElementById("disk").innerHTML = data.disk + "%";
+
+        // 📊 Graph update
+        cpuData.push(cpu);
+        labels.push(new Date().toLocaleTimeString());
+
+        if (cpuData.length > 10) {
+            cpuData.shift();
+            labels.shift();
+        }
+
+        cpuChart.update();
+    });
+
+    // Prediction
+    fetch('/predict')
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("prediction").innerHTML =
+            data.predicted_cpu + "%";
+    });
+
+    // Alert
+    fetch('/alert')
+    .then(res => res.json())
+    .then(data => {
+        let alertBox = document.getElementById("alert");
+        alertBox.innerHTML = data.alert;
+
+        if (data.alert.includes("High")) {
+            alertBox.className = "alert-danger";
+        } else {
+            alertBox.className = "";
+            alertBox.style.color = "lightgreen";
+        }
+    });
+}
+
+// auto refresh
+setInterval(loadData, 2000);
+loadData();
+</script>
+
+</body>
+</html>
